@@ -43,6 +43,22 @@ get_review <- function(link){
 comment_links <- readRDS(file.path("~","GitHub","ieseDataSciProjectTripadvisor","comment_links.rds"))
 
 # Getting and saving reviews
-tripadvisor_reviews <- lapply(comment_links,get_review)
 
+tripadvisor_reviews <- lapply(comment_links[1],get_review)
+
+sequence <- seq(from=1, to=length(comment_links), by=10)
+index<-seq(from = 2, to = 4, by=1) 
+
+for(i in index){
+  reviews <- lapply(comment_links[(sequence[i-1]+1):sequence[i]],get_review)
+  tripadvisor_reviews <- append(tripadvisor_reviews,reviews)
+  saveRDS(tripadvisor_reviews, file = file.path("~","GitHub","ieseDataSciProjectTripadvisor","tripadvisor_reviews.rds"))
+  print(paste0(round((i-1)/(max(index)-1)*100,2),"% complete"))
+}
+
+reviews <- lapply(comment_links[(max(sequence)+1):length(comment_links)], get_review)
+tripadvisor_reviews <- append(tripadvisor_reviews,reviews)
 saveRDS(tripadvisor_reviews, file = file.path("~","GitHub","ieseDataSciProjectTripadvisor","tripadvisor_reviews.rds"))
+
+#test <- as.tibble(tripadvisor_reviews,.name_repair = "unique")
+#write_excel_csv(tripadvisor_reviews,path=file.path("~","GitHub","ieseDataSciProjectTripadvisor","tripadvisor_reviews.csv"))
