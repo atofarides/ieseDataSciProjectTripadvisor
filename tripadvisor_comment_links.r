@@ -63,10 +63,12 @@ get_comment_links <- function(link){
 url <- c('https://www.tripadvisor.es/Trips/88904583/Data_sev_rest_japo')
 restaurant_links <- get_restaurant_links(url)
 
+saveRDS(restaurant_links,file = file.path("~","GitHub","ieseDataSciProjectTripadvisor","restaurant_links.rds"))
+
 # Extracting pagination links
 pagination_links <- unlist(lapply(restaurant_links, get_pagination_links))
 
-# Extracting and saving comment links as it's a time-consuming operation
+# Extracting and saving comment links, it's a time-consuming operation
 comment_links <- unlist(lapply(pagination_links,get_comment_links))
 
 saveRDS(comment_links,file = file.path("~","GitHub","ieseDataSciProjectTripadvisor","comment_links.rds"))
