@@ -49,15 +49,17 @@ get_restaurant <- function(link){
     str_extract("[0-9]+") %>%
     as.numeric()
   
-  # Get restaurant's price range
+  # Get restaurant's price level
   restaurant_price <- html_node(top_node, xpath = "//div[@class = 'header_links']/a") %>%
     html_text() %>%{
       if(str_detect(.,"-")){
-        str_count(.,"\200")/2
+        c("Medio")
+      } else if(str_count(.,"\200")==1){
+        c("Barato")
       } else{
-        str_count(.,"\200")
+        c("Elegante")
       }
-    }
+    } 
   
   # Get restaurant's scores (WIP)
   restaurant_score_nodes <- html_nodes(html, xpath = "//div[contains(@class,
@@ -107,7 +109,9 @@ restaurant_links <- readRDS(file.path("~","GitHub","ieseDataSciProjectTripadviso
 
 # Getting and saving restaurant details
 
-tripadvisor_restaurants <- map_dfr(restaurant_links,get_restaurant)
+tripadvisor_restaurants <- map_dfr(restaurant_links[1:5],get_restaurant) %>%
+  mutate(restaurant_price = factor(x=restaurant_price, levels = c("Barato","Medio","Elegante")))
+
 
 saveRDS(tripadvisor_restaurants, file = file.path("~","GitHub","ieseDataSciProjectTripadvisor",paste0("tripadvisor_restaurants_",as.character(Sys.Date()),".rds")))
 
