@@ -7,6 +7,7 @@ library("tidyverse")
 library("stringr")
 library("readr")
 
+
 # Defining function to get info
 get_restaurant <- function(link){
   # Reading HTML
@@ -47,16 +48,49 @@ get_restaurant <- function(link){
     str_extract("[0-9]+") %>%
     as.numeric()
   
+  # Get restaurant's price range
+  restaurant_price <- html_node(top_node, xpath = "//div[@class = 'header_links']/a") %>%
+    html_text() %>%{
+      if(str_detect(.,"-")){
+        str_count(.,"\200")/2
+      } else{
+        str_count(.,"\200")
+      }
+    }
+  
   #Consildating everything in a tibble
   restaurant <- data.frame(restaurant_name= restaurant_name,
-                        restaurant_rating = restaurant_rating,
-                        restaurant_number_reviews = restaurant_number_reviews,
-                        restaurant_rank = restaurant_rank,
-                        restaurant_postcode = restaurant_postcode,
-                       stringsAsFactors = FALSE)
-  
+                           restaurant_rating = restaurant_rating,
+                           restaurant_number_reviews = restaurant_number_reviews,
+                           restaurant_rank = restaurant_rank,
+                           restaurant_postcode = restaurant_postcode,
+                           restaurant_price = restaurant_price,
+                           stringsAsFactors = FALSE)
   return(restaurant)
+  
+  # Get restaurant's scores (WIP)
+  restaurant_score_nodes <- html_nodes(html, xpath = "//div[contains(@class,
+                                       'restaurants-detail-overview-cards-RatingsOverviewCard__ratingQuestionRow')]") 
+  restaurant_scores <- data.frame()
+  if (length(restaurant_score_nodes) == 0){
+  } else{
+    index <- seq(from = 1, to = length(restaurant_score_nodes), by =1)
+    
+    for (i in index){
+      metric <- html_nodes(restaurant_score_nodes,xpath = "//span[contains(@class,'restaurants-detail-overview-cards-RatingsOverviewCard__ratingText')]")[i] %>%
+        html_text()
+      score <-  html_nodes(restaurant_score_nodes,xpath = "//span[contains(@class,'ui_bubble_rating bubble_')]")[i] %>%
+        html_attr(name = "class") %>%
+        str_extract(pattern = "[0-9]{2}") %>%
+        str_replace(pattern = "([0-9])([0-9])",replacement = "\\1.\\2" ) %>%
+        as.numeric()
+      new_row <- data.frame(metric = metric,score = score, stringsAsFactors = FALSE)
+      restaurant_scores <- bind_rows(restaurant_scores,new_row)
+    }
+  }
 }
+
+
 
 # load RDS file 
 restaurant_links <- readRDS(file.path("~","GitHub","ieseDataSciProjectTripadvisor","restaurant_links.rds"))
