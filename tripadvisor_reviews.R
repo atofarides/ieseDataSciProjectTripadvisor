@@ -7,8 +7,7 @@ library("tidyverse")
 library("stringr")
 library("readr")
 
-
-
+# Writing the main review gathering function
 get_review <- function(link){
   # Extracting review ID
   comment_id <- str_match(link,pattern = "r([0-9]+)-") %>%
