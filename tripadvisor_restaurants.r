@@ -109,7 +109,7 @@ restaurant_links <- readRDS(file.path("~","GitHub","ieseDataSciProjectTripadviso
 
 # Getting and saving restaurant details
 
-tripadvisor_restaurants <- map_dfr(restaurant_links[1:5],get_restaurant) %>%
+tripadvisor_restaurants <- map_dfr(restaurant_links,get_restaurant) %>%
   mutate(restaurant_price = factor(x=restaurant_price, levels = c("Barato","Medio","Elegante")))
 
 
