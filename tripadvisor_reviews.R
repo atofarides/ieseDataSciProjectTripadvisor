@@ -7,6 +7,7 @@ library("tidyverse")
 library("stringr")
 library("readr")
 library("tm")
+library("SnowballC")
 
 # Writing the main review gathering function
 get_review <- function(link){
@@ -62,12 +63,14 @@ get_termdocument <- function(reviews){
   corpus_reviews <- corpus_reviews %>%
     tm_map(removePunctuation,ucp=TRUE) %>%
     tm_map(content_transformer(tolower)) %>%
-    tm_map(removeWords,c("´","\200",stopwords("es"))) %>%
+    tm_map(removeWords,c("´","\200",stopwords("spanish"))) %>%
     tm_map(stripWhitespace) %>%
-    tm_map(removeNumbers)
+    tm_map(removeNumbers) %>%
+    tm_map(stemDocument,language = "spanish")
   
   # Creating a document term matrix
-  reviews_dtm <- DocumentTermMatrix(corpus_reviews)
+  reviews_dtm <- DocumentTermMatrix(corpus_reviews, control=list(stemming=TRUE))
+  #reviews_dtm <- DocumentTermMatrix(corpus_reviews)
   
   # Return a data frame
   reviews_dtm <- as.matrix(reviews_dtm) %>%
