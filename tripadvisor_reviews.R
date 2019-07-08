@@ -6,6 +6,7 @@ library("rvest")
 library("tidyverse")
 library("stringr")
 library("readr")
+library("tm")
 
 # Writing the main review gathering function
 get_review <- function(link){
@@ -39,16 +40,42 @@ get_review <- function(link){
     html_text()
   
   #Consildating everything in a tibble
-  comment <- data.frame(review_id=comment_id,
+  comment <- data.frame(doc_id=as.numeric(comment_id),
+                        text = comment_text,
                     restaurant_name= restaurant_name,
                     review_date = comment_date,
                     username = username,
                     review_title = comment_title,
                     review_rating=as.numeric(rating),
-                    review_text = comment_text, stringsAsFactors = FALSE)
-  #comment <- separate(comment, col=user_location,into=c("user_city","user_country"),sep=", ")
+                     stringsAsFactors = FALSE)
   
   return(comment)
+}
+
+get_termdocument <- function(reviews){
+  # Creating the corpus
+  corpus_reviews <- reviews %>%
+    DataframeSource() %>%
+    VCorpus()
+  
+  # Cleaning the corpus
+  corpus_reviews <- corpus_reviews %>%
+    tm_map(removePunctuation,ucp=TRUE) %>%
+    tm_map(content_transformer(tolower)) %>%
+    tm_map(removeWords,c("´","\200",stopwords("es"))) %>%
+    tm_map(stripWhitespace) %>%
+    tm_map(removeNumbers)
+  
+  # Creating a document term matrix
+  reviews_dtm <- DocumentTermMatrix(corpus_reviews)
+  
+  # Return a data frame
+  reviews_dtm <- as.matrix(reviews_dtm) %>%
+    data.frame(row.names = row.names(.),stringsAsFactors = FALSE) %>%
+    .[,-(1:13)] %>%
+    mutate(doc_id = as.numeric(rownames(.)))
+  
+  return(reviews_dtm)
 }
 
 
@@ -80,6 +107,15 @@ saveRDS(tripadvisor_reviews, file = file.path("~","GitHub","ieseDataSciProjectTr
 # Check if all values are unique
 sum(duplicated(tripadvisor_reviews$review_id))
 
-write_excel_csv(tripadvisor_reviews,path=file.path("~","GitHub","ieseDataSciProjectTripadvisor",paste0("tripadvisor_reviews_",as.character(Sys.Date()),".csv")))
+# Creating a term document matrix
+tm_matrix <- get_termdocument(tripadvisor_reviews)
+
+# Joining the reviews with the term document df
+tripadvisor_reviews_tm <- inner_join(tripadvisor_reviews,tm_matrix,by="doc_id")
+
+# Saving the final df
+saveRDS(tripadvisor_reviews_tm, file = file.path("~","GitHub","ieseDataSciProjectTripadvisor",paste0("tripadvisor_reviews_",as.character(Sys.Date()),".rds")))
+
+write_excel_csv(tripadvisor_reviews_tm,path=file.path("~","GitHub","ieseDataSciProjectTripadvisor",paste0("tripadvisor_reviews_",as.character(Sys.Date()),".csv")))
 
 
