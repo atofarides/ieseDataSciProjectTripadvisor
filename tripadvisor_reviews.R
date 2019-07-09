@@ -57,20 +57,20 @@ get_termdocument <- function(reviews){
   # Creating the corpus
   corpus_reviews <- reviews %>%
     DataframeSource() %>%
-    VCorpus()
+    VCorpus(readerControl = list(language="spanish"))
   
   # Cleaning the corpus
   corpus_reviews <- corpus_reviews %>%
     tm_map(removePunctuation,ucp=TRUE) %>%
     tm_map(content_transformer(tolower)) %>%
     tm_map(removeWords,c("´","\200",stopwords("spanish"))) %>%
-    tm_map(stripWhitespace) %>%
     tm_map(removeNumbers) %>%
-    tm_map(stemDocument,language = "spanish")
-  
+    tm_map(stripWhitespace) %>%
+    tm_map(content_transformer(str_trim),side="left") %>%
+    tm_map(stemDocument)
+
   # Creating a document term matrix
   reviews_dtm <- DocumentTermMatrix(corpus_reviews, control=list(stemming=TRUE))
-  #reviews_dtm <- DocumentTermMatrix(corpus_reviews)
   
   # Return a data frame
   reviews_dtm <- as.matrix(reviews_dtm) %>%
