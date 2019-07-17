@@ -1,4 +1,4 @@
-# Creating a term document matrix from review text
+# Creating a term document matrix from review titles
 
 #Loading libraries
 library("XML")
@@ -30,7 +30,6 @@ get_termdocument <- function(reviews){
   # Return a data frame
   reviews_dtm <- as.matrix(reviews_dtm) %>%
     data.frame(row.names = row.names(.),stringsAsFactors = FALSE) %>%
-    .[,-(1:13)] %>%
     mutate(doc_id = as.numeric(rownames(.))) 
   
   # Choose top 100 words - to be further refined
@@ -57,35 +56,33 @@ combine_words <- function(matrix,cols,name){
 # Read the latest version of review data 
 tripadvisor_reviews <- readRDS(file.path("~","GitHub","ieseDataSciProjectTripadvisor",paste0("tripadvisor_reviews_",as.character(Sys.Date()),".rds")))
 
+# Putting the title column as text
+tripadvisor_reviews <- rename(tripadvisor_reviews,review_text = "text",text = "review_title") %>%
+  select(1,"text",everything()) 
+
 # Creating a term document matrix
 tm_matrix <- get_termdocument(tripadvisor_reviews)
 
 # Refining the matrix
 # Combining synonyms or word variations
-tm_matrix_refined <- combine_words(tm_matrix,c("bien","buen","bueno","buena","buenos"),c("bien")) %>%
+tm_matrix_refined <- combine_words(tm_matrix,c("bien","buen","bueno","buena","buenisimo","buenísimo"),c("bien")) %>%
   combine_words(c("comer","comida"),c("comida")) %>%
-  combine_words(c("japonés","japonesa","japoneses"),c("japonesa")) %>%
+  combine_words(c("japonés","japones","japonesa","japoneses","japón","japo"),c("japonesa")) %>%
   combine_words(c("mejor","mejores"),c("mejor")) %>%
-  combine_words(c("mesa","mesas"),c("mesa")) %>%
-  combine_words(c("pedido","pedimos","pedir"),c("pedir")) %>%
-  combine_words(c("plato","platos"),c("plato")) %>%
   combine_words(c("precio","precios"),c("precio")) %>%
-  combine_words(c("probado","probar"),c("probado")) %>%
-  combine_words(c("puede","puedes"),c("puede"))  %>%
-  combine_words(c("recomiendo","recomendable"),c("recomendable")) %>%
-  combine_words(c("restaurante","restaurantes"),c("restaurante")) %>%
-  combine_words(c("vez","veces"),c("vez")) %>%
-  combine_words(c("atento","atención"),c("atención"))
+  combine_words(c("rica","rico","riquisimo","riquísimo"),c("rico")) %>%
+  combine_words(c("sabor","sabores"),c("sabor")) %>%
+  combine_words(c("sorpresa","sorprendente"),c("sorpresa"))
 
 # Removing irrelevant words or out of context words
-words <- c("además","así","aunque","cada","decir","dos","hace","ido","mas","menos","puede","ser","sevilla","siempre","solo","tan","vez")
+words <- c("aunque","siempre","sevilla","vez")
 tm_matrix_refined <- tm_matrix_refined[,!(names(tm_matrix_refined) %in% words)]
 
 # Choosing the top 25 words 
 top_words <- tm_matrix_refined %>%
   colSums() %>%
   sort(decreasing = TRUE) %>%
-  head(50) %>%
+  head(26) %>%
   names() 
 
 tm_matrix_refined_top <- tm_matrix_refined[,top_words]
@@ -94,8 +91,8 @@ tm_matrix_refined_top <- tm_matrix_refined[,top_words]
 tripadvisor_reviews_tm <- inner_join(tripadvisor_reviews,tm_matrix_refined_top,by="doc_id")
 
 # Saving the final df
-saveRDS(tripadvisor_reviews_tm, file = file.path("~","GitHub","ieseDataSciProjectTripadvisor",paste0("tripadvisor_reviews_tm_text_",as.character(Sys.Date()),".rds")))
+saveRDS(tripadvisor_reviews_tm, file = file.path("~","GitHub","ieseDataSciProjectTripadvisor",paste0("tripadvisor_reviews_tm_title_",as.character(Sys.Date()),".rds")))
 
-write_excel_csv(tripadvisor_reviews_tm,path=file.path("~","GitHub","ieseDataSciProjectTripadvisor",paste0("tripadvisor_reviews_tm_text_",as.character(Sys.Date()),".csv")))
+write_excel_csv(tripadvisor_reviews_tm,path=file.path("~","GitHub","ieseDataSciProjectTripadvisor",paste0("tripadvisor_reviews_tm_title_",as.character(Sys.Date()),".csv")))
 
 
