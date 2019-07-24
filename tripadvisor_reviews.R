@@ -66,7 +66,7 @@ index<-seq(from = 2, to = length(sequence), by=1)
 for(i in index){
   reviews <- map_dfr(comment_links[(sequence[i-1]+1):sequence[i]],get_review)
   tripadvisor_reviews <- bind_rows(tripadvisor_reviews,reviews)
-  saveRDS(tripadvisor_reviews, file = file.path("~","GitHub","ieseDataSciProjectTripadvisor",paste0("tripadvisor_reviews_",as.character(Sys.Date()),".rds")))
+  saveRDS(tripadvisor_reviews, file = file.path("~","GitHub","ieseDataSciProjectTripadvisor","tripadvisor_reviews.rds"))
   print(paste0(round((i-1)/(max(index)-1)*100,2),"% complete"))
 }
 
@@ -81,6 +81,6 @@ tripadvisor_reviews <- bind_rows(tripadvisor_reviews,reviews)
 sum(duplicated(tripadvisor_reviews$review_id))
 
 # Save the final df 
-saveRDS(tripadvisor_reviews, file = file.path("~","GitHub","ieseDataSciProjectTripadvisor",paste0("tripadvisor_reviews_",as.character(Sys.Date()),".rds")))
-write_excel_csv(tripadvisor_reviews,path=file.path("~","GitHub","ieseDataSciProjectTripadvisor",paste0("tripadvisor_reviews_",as.character(Sys.Date()),".csv")))
+saveRDS(tripadvisor_reviews, file = file.path("~","GitHub","ieseDataSciProjectTripadvisor","tripadvisor_reviews.rds"))
+write_excel_csv(tripadvisor_reviews,path=file.path("~","GitHub","ieseDataSciProjectTripadvisor","tripadvisor_reviews.csv"))
 

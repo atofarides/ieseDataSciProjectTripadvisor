@@ -54,22 +54,30 @@ combine_words <- function(matrix,cols,name){
 }
 
 # Read the latest version of review data 
-tripadvisor_reviews <- readRDS(file.path("~","GitHub","ieseDataSciProjectTripadvisor",paste0("tripadvisor_reviews_",as.character(Sys.Date()),".rds")))
+tripadvisor_reviews <- readRDS(file.path("~","GitHub","ieseDataSciProjectTripadvisor","tripadvisor_reviews.rds"))
 
 # Putting the title column as text
 tripadvisor_reviews <- rename(tripadvisor_reviews,review_text = "text",text = "review_title") %>%
   select(1,"text",everything()) 
+
+# Remove entries from restaurants with less than 100 reviews
+restaurants_over_100 <- tripadvisor_reviews %>%
+  group_by(restaurant_name) %>%
+  count(restaurant_name) %>%
+  filter(n>100) %>%
+  select(restaurant_name) 
+
+tripadvisor_reviews <- tripadvisor_reviews[tripadvisor_reviews$restaurant_name %in% restaurants_over_100$restaurant_name,]
 
 # Creating a term document matrix
 tm_matrix <- get_termdocument(tripadvisor_reviews)
 
 # Refining the matrix
 # Combining synonyms or word variations
-tm_matrix_refined <- combine_words(tm_matrix,c("bien","buen","bueno","buena","buenisimo","buenísimo"),c("bien")) %>%
+tm_matrix_refined <- combine_words(tm_matrix,c("bien","buen","bueno","buena","buenísimo"),c("bien")) %>%
   combine_words(c("comer","comida"),c("comida")) %>%
   combine_words(c("japonés","japones","japonesa","japoneses","japón","japo"),c("japonesa")) %>%
   combine_words(c("mejor","mejores"),c("mejor")) %>%
-  combine_words(c("precio","precios"),c("precio")) %>%
   combine_words(c("rica","rico","riquisimo","riquísimo"),c("rico")) %>%
   combine_words(c("sabor","sabores"),c("sabor")) %>%
   combine_words(c("sorpresa","sorprendente"),c("sorpresa"))
@@ -78,14 +86,25 @@ tm_matrix_refined <- combine_words(tm_matrix,c("bien","buen","bueno","buena","bu
 words <- c("aunque","siempre","sevilla","vez")
 tm_matrix_refined <- tm_matrix_refined[,!(names(tm_matrix_refined) %in% words)]
 
-# Choosing the top 25 words 
+# Choosing the top 50 words and doc_id
 top_words <- tm_matrix_refined %>%
   colSums() %>%
   sort(decreasing = TRUE) %>%
-  head(26) %>%
-  names() 
+  head(51)
 
-tm_matrix_refined_top <- tm_matrix_refined[,top_words]
+top_words_no_doc_id <- top_words[2:51] %>%
+  as.data.frame()
+
+# Plotting top words
+
+ggplot(top_words_no_doc_id,aes(x=row.names(top_words_no_doc_id),y=.))+
+  geom_col() +
+  coord_flip() +
+  labs(y="count",x="Top words - From review title")
+
+# CHoosing the top 50 words in the tm matrix
+
+tm_matrix_refined_top <- tm_matrix_refined[,names(top_words)]
 
 # Joining the reviews with the term document df
 tripadvisor_reviews_tm <- inner_join(tripadvisor_reviews,tm_matrix_refined_top,by="doc_id")

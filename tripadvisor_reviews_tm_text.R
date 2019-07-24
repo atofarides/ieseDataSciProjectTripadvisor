@@ -8,6 +8,7 @@ library("stringr")
 library("readr")
 library("tm")
 library("SnowballC")
+library("ggplot2")
 
 get_termdocument <- function(reviews){
   # Creating the corpus
@@ -55,7 +56,16 @@ combine_words <- function(matrix,cols,name){
 }
 
 # Read the latest version of review data 
-tripadvisor_reviews <- readRDS(file.path("~","GitHub","ieseDataSciProjectTripadvisor",paste0("tripadvisor_reviews_",as.character(Sys.Date()),".rds")))
+tripadvisor_reviews <- readRDS(file.path("~","GitHub","ieseDataSciProjectTripadvisor","tripadvisor_reviews.rds"))
+
+# Remove entries from restaurants with less than 100 reviews
+restaurants_over_100 <- tripadvisor_reviews %>%
+  group_by(restaurant_name) %>%
+  count(restaurant_name) %>%
+  filter(n>100) %>%
+  select(restaurant_name) 
+
+tripadvisor_reviews <- tripadvisor_reviews[tripadvisor_reviews$restaurant_name %in% restaurants_over_100$restaurant_name,]
 
 # Creating a term document matrix
 tm_matrix <- get_termdocument(tripadvisor_reviews)
@@ -81,21 +91,32 @@ tm_matrix_refined <- combine_words(tm_matrix,c("bien","buen","bueno","buena","bu
 words <- c("además","así","aunque","cada","decir","dos","hace","ido","mas","menos","puede","ser","sevilla","siempre","solo","tan","vez")
 tm_matrix_refined <- tm_matrix_refined[,!(names(tm_matrix_refined) %in% words)]
 
-# Choosing the top 25 words 
+# Choosing the top 50 words and doc_id
 top_words <- tm_matrix_refined %>%
   colSums() %>%
   sort(decreasing = TRUE) %>%
-  head(50) %>%
-  names() 
+  head(51)
 
-tm_matrix_refined_top <- tm_matrix_refined[,top_words]
+top_words_no_doc_id <- top_words[2:51] %>%
+  as.data.frame()
+
+# Plotting top words
+
+ggplot(top_words_no_doc_id,aes(x=row.names(top_words_no_doc_id),y=.))+
+  geom_col() +
+  coord_flip() +
+  labs(y="count",x="Top words - From review text")
+
+# CHoosing the top 50 words in the tm matrix
+
+tm_matrix_refined_top <- tm_matrix_refined[,names(top_words)]
 
 # Joining the reviews with the term document df
 tripadvisor_reviews_tm <- inner_join(tripadvisor_reviews,tm_matrix_refined_top,by="doc_id")
 
 # Saving the final df
-saveRDS(tripadvisor_reviews_tm, file = file.path("~","GitHub","ieseDataSciProjectTripadvisor",paste0("tripadvisor_reviews_tm_text_",as.character(Sys.Date()),".rds")))
+saveRDS(tripadvisor_reviews_tm, file = file.path("~","GitHub","ieseDataSciProjectTripadvisor","tripadvisor_reviews_tm_text.rds"))
 
-write_excel_csv(tripadvisor_reviews_tm,path=file.path("~","GitHub","ieseDataSciProjectTripadvisor",paste0("tripadvisor_reviews_tm_text_",as.character(Sys.Date()),".csv")))
+write_excel_csv(tripadvisor_reviews_tm,path=file.path("~","GitHub","ieseDataSciProjectTripadvisor","tripadvisor_reviews_tm_text.csv"))
 
 

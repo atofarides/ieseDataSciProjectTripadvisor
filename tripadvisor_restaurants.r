@@ -113,8 +113,8 @@ tripadvisor_restaurants <- map_dfr(restaurant_links,get_restaurant) %>%
   mutate(restaurant_price = factor(x=restaurant_price, levels = c("Barato","Medio","Elegante")))
 
 
-saveRDS(tripadvisor_restaurants, file = file.path("~","GitHub","ieseDataSciProjectTripadvisor",paste0("tripadvisor_restaurants_",as.character(Sys.Date()),".rds")))
+saveRDS(tripadvisor_restaurants, file = file.path("~","GitHub","ieseDataSciProjectTripadvisor","tripadvisor_restaurants.rds"))
 
-write_excel_csv(tripadvisor_restaurants,path=file.path("~","GitHub","ieseDataSciProjectTripadvisor",paste0("tripadvisor_restaurants_",as.character(Sys.Date()),".csv")))
+write_excel_csv(tripadvisor_restaurants,path=file.path("~","GitHub","ieseDataSciProjectTripadvisor","tripadvisor_restaurants.csv"))
 
 
