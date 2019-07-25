@@ -41,6 +41,13 @@ get_termdocument <- function(reviews){
   
   reviews_dtm <- reviews_dtm[,reviews_dtm_top]
   
+  # Binarising results in term document matrix
+  for(i in 1:dim(reviews_dtm)[1]){
+    for(j in 2:dim(reviews_dtm)[2]){
+      reviews_dtm[i,j] <- ifelse(reviews_dtm[i,j]>=1,1,0)
+    }
+  }
+  
   return(reviews_dtm)
 }
 
@@ -110,8 +117,8 @@ tm_matrix_refined_top <- tm_matrix_refined[,names(top_words)]
 tripadvisor_reviews_tm <- inner_join(tripadvisor_reviews,tm_matrix_refined_top,by="doc_id")
 
 # Saving the final df
-saveRDS(tripadvisor_reviews_tm, file = file.path("~","GitHub","ieseDataSciProjectTripadvisor",paste0("tripadvisor_reviews_tm_title_",as.character(Sys.Date()),".rds")))
+saveRDS(tripadvisor_reviews_tm, file = file.path("~","GitHub","ieseDataSciProjectTripadvisor","tripadvisor_reviews_tm_title.rds"))
 
-write_excel_csv(tripadvisor_reviews_tm,path=file.path("~","GitHub","ieseDataSciProjectTripadvisor",paste0("tripadvisor_reviews_tm_title_",as.character(Sys.Date()),".csv")))
+write_excel_csv(tripadvisor_reviews_tm,path=file.path("~","GitHub","ieseDataSciProjectTripadvisor","tripadvisor_reviews_tm_title.csv"))
 
 

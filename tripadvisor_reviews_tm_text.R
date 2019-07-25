@@ -43,6 +43,13 @@ get_termdocument <- function(reviews){
   
   reviews_dtm <- reviews_dtm[,reviews_dtm_top]
   
+  # Binarising results in term document matrix
+  for(i in 1:dim(reviews_dtm)[1]){
+    for(j in 2:dim(reviews_dtm)[2]){
+      reviews_dtm[i,j] <- ifelse(reviews_dtm[i,j]>=1,1,0)
+    }
+  }
+  
   return(reviews_dtm)
 }
 
