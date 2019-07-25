@@ -104,12 +104,13 @@ top_words_no_doc_id <- top_words[2:51] %>%
 
 # Plotting top words
 
-ggplot(top_words_no_doc_id,aes(x=row.names(top_words_no_doc_id),y=.))+
+top_words_plot <- ggplot(top_words_no_doc_id,aes(x=reorder(row.names(top_words_no_doc_id),.),y=.))+
   geom_col() +
   coord_flip() +
-  labs(y="count",x="Top words - From review title")
+  labs(title = "Top words count from review title",y="Count",x="Top words")
+top_words_plot
 
-# CHoosing the top 50 words in the tm matrix
+# Choosing the top 50 words in the tm matrix
 
 tm_matrix_refined_top <- tm_matrix_refined[,names(top_words)]
 
@@ -121,4 +122,28 @@ saveRDS(tripadvisor_reviews_tm, file = file.path("~","GitHub","ieseDataSciProjec
 
 write_excel_csv(tripadvisor_reviews_tm,path=file.path("~","GitHub","ieseDataSciProjectTripadvisor","tripadvisor_reviews_tm_title.csv"))
 
+# Question 1: Which words correlate with higher scores, using a multiplication method
+
+# Multiplying the terms by documents ratings
+tripadvisor_reviews_q1 <- tripadvisor_reviews_tm
+for(j in 8:dim(tripadvisor_reviews_q1)[2]){
+  tripadvisor_reviews_q1[,j] <- tripadvisor_reviews_q1$review_rating*tripadvisor_reviews_q1[,j]
+}
+
+# Counting number of reviews with each term
+term_counts <- tripadvisor_reviews_tm[,8:57] %>%
+  colSums()
+
+# Normalised scoring
+tripadvisor_reviews_q1 <- tripadvisor_reviews_q1[,8:57] %>%
+  colSums()/term_counts %>%
+  sort(decreasing = TRUE) %>%
+  as.data.frame()
+
+#Plot
+top_score_plot <- ggplot(tripadvisor_reviews_q1,aes(x=reorder(row.names(tripadvisor_reviews_q1),.),y=.))+
+  geom_col() +
+  coord_flip(ylim = c(1,5)) +
+  labs(title = "Top words from review title, scored by review ratings",y="Score",x="Top words")
+top_score_plot
 
