@@ -169,6 +169,13 @@ term_counts_q2 <- tripadvisor_reviews_tm[,c(3,8:57)] %>%
   group_by(restaurant_name) %>%
   summarise_at(.vars = names(.)[2:51] ,sum) 
 
+# Set to 0 all term counts below 10 as they cannot be considered representative
+for (i in 1:dim(term_counts_q2)[1]){
+  for (j in 2:dim(term_counts_q2)[2]){
+    term_counts_q2[i,j] <- ifelse(term_counts_q2[i,j]<10,0,term_counts_q2[i,j])
+  }
+}
+
 # Normalised scoring for each restaurant 
 tripadvisor_reviews_q2 <- tripadvisor_reviews_q2[,c(3,8:57)] %>%
   group_by(restaurant_name) %>%
@@ -181,7 +188,7 @@ tripadvisor_reviews_q2_normalised <- cbind(tripadvisor_reviews_q2[,1],tripadviso
 # Identify the top 5 and bottom 5 scoring terms for each restaurant
 
 tripadvisor_reviews_q2_topbottom <- gather(tripadvisor_reviews_q2_normalised,key = "term", value = "score", -restaurant_name) %>%
-  filter(score != 'NaN') %>%
+  filter(score != 'NaN' & score != 'Inf') %>%
   group_by(restaurant_name) %>%
   arrange(desc(score), .by_group = TRUE)
 
