@@ -41,13 +41,6 @@ get_termdocument <- function(reviews){
   
   reviews_dtm <- reviews_dtm[,reviews_dtm_top]
   
-  # Binarising results in term document matrix
-  for(i in 1:dim(reviews_dtm)[1]){
-    for(j in 2:dim(reviews_dtm)[2]){
-      reviews_dtm[i,j] <- ifelse(reviews_dtm[i,j]>=1,1,0)
-    }
-  }
-  
   return(reviews_dtm)
 }
 
@@ -93,6 +86,13 @@ tm_matrix_refined <- combine_words(tm_matrix,c("bien","buen","bueno","buena","bu
 words <- c("aunque","siempre","sevilla","vez")
 tm_matrix_refined <- tm_matrix_refined[,!(names(tm_matrix_refined) %in% words)]
 
+# Binarising results in term document matrix
+for(i in 1:dim(tm_matrix_refined)[1]){
+  for(j in 2:dim(tm_matrix_refined)[2]){
+    tm_matrix_refined[i,j] <- ifelse(tm_matrix_refined[i,j]>=1,1,0)
+  }
+}
+
 # Choosing the top 50 words and doc_id
 top_words <- tm_matrix_refined %>%
   colSums() %>%
@@ -107,7 +107,9 @@ top_words_no_doc_id <- top_words[2:51] %>%
 top_words_plot <- ggplot(top_words_no_doc_id,aes(x=reorder(row.names(top_words_no_doc_id),.),y=.))+
   geom_col() +
   coord_flip() +
-  labs(title = "Top words count from review title",y="Count",x="Top words")
+  labs(title = "Top words count from review title",y="Count",x="Top words") +
+  ggsave(file.path("~","GitHub","ieseDataSciProjectTripadvisor","top_terms_in_title.pdf"),
+         width=30,height=15, units = "cm")
 top_words_plot
 
 # Choosing the top 50 words in the tm matrix
@@ -131,12 +133,12 @@ for(j in 8:dim(tripadvisor_reviews_q1)[2]){
 }
 
 # Counting number of reviews with each term
-term_counts <- tripadvisor_reviews_tm[,8:57] %>%
+term_counts_q1 <- tripadvisor_reviews_tm[,8:57] %>%
   colSums()
 
 # Normalised scoring
 tripadvisor_reviews_q1 <- tripadvisor_reviews_q1[,8:57] %>%
-  colSums()/term_counts %>%
+  colSums()/term_counts_q1 %>%
   sort(decreasing = TRUE) %>%
   as.data.frame()
 
@@ -144,6 +146,68 @@ tripadvisor_reviews_q1 <- tripadvisor_reviews_q1[,8:57] %>%
 top_score_plot <- ggplot(tripadvisor_reviews_q1,aes(x=reorder(row.names(tripadvisor_reviews_q1),.),y=.))+
   geom_col() +
   coord_flip(ylim = c(1,5)) +
-  labs(title = "Top words from review title, scored by review ratings",y="Score",x="Top words")
+  labs(title = "Top words from review title, scored by review ratings",y="Score",x="Top words") +
+  ggsave(file.path("~","GitHub","ieseDataSciProjectTripadvisor","top_scoring_terms_in_title.pdf"),
+         width=30,height=15, units = "cm")
 top_score_plot
+
+# Question 2: Which words correlate with higher scores for each restaurant, using a multiplication method
+
+# Multiplying the terms by documents ratings
+tripadvisor_reviews_q2 <- tripadvisor_reviews_tm
+for(j in 8:dim(tripadvisor_reviews_q2)[2]){
+  tripadvisor_reviews_q2[,j] <- tripadvisor_reviews_q2$review_rating*tripadvisor_reviews_q2[,j]
+}
+
+# Counting number of reviews for each term for each restaurant
+term_counts_q2 <- tripadvisor_reviews_tm[,c(4,8:57)] %>%
+  group_by(restaurant_name) %>%
+  summarise_at(.vars = names(.)[2:51] ,sum) 
+
+# Normalised scoring for each restaurant 
+tripadvisor_reviews_q2 <- tripadvisor_reviews_q2[,c(4,8:57)] %>%
+  group_by(restaurant_name) %>%
+  summarise_at(.vars = names(.)[2:51] ,sum) 
+
+tripadvisor_reviews_q2_normalised <- tripadvisor_reviews_q2[,2:51]/term_counts_q2[,2:51]
+
+tripadvisor_reviews_q2_normalised <- cbind(tripadvisor_reviews_q2[,1],tripadvisor_reviews_q2_normalised)
+
+# Identify the top 5 and bottom 5 scoring terms for each restaurant
+
+tripadvisor_reviews_q2_topbottom <- gather(tripadvisor_reviews_q2_normalised,key = "term", value = "score", -restaurant_name) %>%
+  filter(score != 'NaN') %>%
+  group_by(restaurant_name) %>%
+  arrange(desc(score), .by_group = TRUE)
+
+tripadvisor_reviews_q2_top <- tripadvisor_reviews_q2_topbottom %>%
+  group_by(restaurant_name) %>%
+  top_n(5)
+
+tripadvisor_reviews_q2_bottom <- tripadvisor_reviews_q2_topbottom %>%
+  group_by(restaurant_name) %>%
+  top_n(-5)
+
+#Plot top
+top_score_plot_q2 <- ggplot(tripadvisor_reviews_q2_top,aes(x=term,y=score))+
+  geom_col() +
+  coord_flip() + 
+  facet_wrap(~restaurant_name, scales = "free") +
+  labs(title = "Top words from review title, scored by review ratings, for each restaurant",y="Score",x="Top words") +
+  ggsave(file.path("~","GitHub","ieseDataSciProjectTripadvisor","top_scoring_restaurant_terms_in_title.pdf"),
+         width=40,height=23,units="cm")
+top_score_plot_q2
+
+#Plot bottom
+bottom_score_plot_q2 <- ggplot(tripadvisor_reviews_q2_bottom,aes(x=term,y=score))+
+  geom_col() +
+  coord_flip() + 
+  facet_wrap(~restaurant_name, scales = "free") +
+  labs(title = "Bottom words from review title, scored by review ratings, for each restaurant",y="Score",x="Bottom words") +
+  ggsave(file.path("~","GitHub","ieseDataSciProjectTripadvisor","bottom_scoring_restaurant_terms_in_title.pdf"),
+         width=40,height=23,units="cm")
+bottom_score_plot_q2
+
+
+
 
